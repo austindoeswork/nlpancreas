@@ -74,24 +74,33 @@ def acceptable_word(word):
 
 def get_terms(tree):
     for leaf in npleaves(tree):
-        term = [ normalise(w) for w,t in leaf if acceptable_word(w) ]
+        term = [ (normalise(w),t) for w,t in leaf if acceptable_word(w) ]
         yield term, classify_npterm(term)
 
 #term is a list of strings
 def classify_npterm(term):
+    # TODO change this to a map for constant time lookup
     timeTokens = ["minutes", "hours", "seconds", "moments", "minute",
-                    "hour", "second", "moment" ]
+                    "hour", "second", "moment", "min", "mins",
+                    "night", "tonight"]
     for tok in timeTokens:
-        if tok in term:
-            return "time"
+        for f,p in term:
+            if tok in f:
+                return "time"
+        #  if tok in term:
+            #  return "time"
     return "food"
 
-def parse_input(inputSentence):
+def parse_input(inputSentence, verbose):
+    # TODO fix POS tagger
+    # fails on I ate hummus 5 minutes ago
     postoks = pos_tokenize(inputSentence)
-    print postoks
     tree = chunk_tree(postoks)
-    print tree
     terms = get_terms(tree)
+
+    if verbose:
+        print postoks
+        print tree
     
     foodList = []
     for term in terms:
