@@ -1,6 +1,7 @@
 # module botinput
 import nltk
 from nltk.corpus import stopwords
+import csv
 
 stopwords = stopwords.words('english')
 lemmatizer = nltk.WordNetLemmatizer()
@@ -20,33 +21,59 @@ grammar = r"""
         {<NN.*|JJ>*<NN.*>}  # Nouns and Adjectives, terminated with Nouns
     NBARS:
         {<CD><NBAR>} # count then a noun phrase
-    NP:
-        {<NBAR><IN><NBAR>}  # Above, connected with in/of/etc...
-        {<NBARS><IN><NBAR>}  # Above, connected with in/of/etc...
+    AMOUNT:
+        {<CD><QUAN>}
+        {<QUAN>}
+    FOOD:
+        {<NBAR><IN><NBAR>}  
+        {<NBAR><POS><NBAR>}  
+        {<NBARS><IN><NBAR>}  
+        {<NBARS><POS><NBAR>}  
+        {<AMOUNT><IN><NBAR>}  
+        {<AMOUNT><POS><NBAR>}  # Above, connected with in/of/etc...
+        {<AMOUNT><IN><NBAR>}  
+        {<AMOUNT><POS><NBAR>}  
         {<NBAR>}
         {<NBARS>}
     TIME:
-        {<IN><CD>}
-"""
-grammar2 = r"""
-    NBAR:
-        {<NN.*|JJ>*<NN.*>}  # Nouns and Adjectives, terminated with Nouns
-    NBARS:
-        {<CD><NBAR>} # count then a noun phrase
-    NP:
-        {<NBAR><IN><NBAR>}  # Above, connected with in/of/etc...
-        {<NBARS><IN><NBAR>}  # Above, connected with in/of/etc...
-        {<NBAR>}
-        {<NBARS>}
-    TIME:
-        {<IN><CD>}
+        {<CD><TIMR>}
+        {<JJ><TIMA>}
+        {<TIMR>}
+        {<TIMA>}
 """
 chunker = nltk.RegexpParser(grammar)
 
+# =============================================================================
+# NLP
+# =============================================================================
+# TODO refactor all of this into a class
+
+amendments = None
+def set_amendments(filepath):
+    global amendments
+    amendments = {}
+    data = list(csv.reader(open(filepath), delimiter=' '))
+    for d in data:
+        if len(d) == 2:
+            word = d[0]
+            tag = d[1]
+            amendments[word] = tag
+
+def pos_amend(tagged_list):
+    if not amendments:
+        return
+    for i, tup in enumerate(tagged_list):
+        word, tok = tup
+        replacement = amendments.get(word)
+        if replacement:
+            tagged_list[i] = (word,replacement)
+
 def pos_tokenize(inputSentence):
-    toks = nltk.regexp_tokenize(inputSentence, sentence_re)
+    #  toks = nltk.regexp_tokenize(inputSentence, sentence_re)
     toks = nltk.word_tokenize(inputSentence)
+    #  toks = [normalise(w) for w in toks]
     postoks = nltk.tag.pos_tag(toks)
+    pos_amend(postoks)
     return postoks
 
 def chunk_tree(postoks):
@@ -55,7 +82,7 @@ def chunk_tree(postoks):
 
 def npleaves(tree):
     """Finds NP (nounphrase) leaf nodes of a chunk tree."""
-    for subtree in tree.subtrees(filter = lambda t: t.label()=='NP'):
+    for subtree in tree.subtrees(filter = lambda t: t.label()=='FOOD'):
         yield subtree.leaves()
 
 def normalise(word):
@@ -68,32 +95,45 @@ def normalise(word):
 
 def acceptable_word(word):
     """Checks conditions for acceptable word: length, stopword."""
+    if word.lower() == 'of':
+        return True
     accepted = bool(0 <= len(word) <= 40
         and word.lower() not in stopwords)
     return accepted
 
 def get_terms(tree):
-    for leaf in npleaves(tree):
-        term = [ (normalise(w),t) for w,t in leaf if acceptable_word(w) ]
-        yield term, classify_npterm(term)
+    terms = []
+    foods = []
+    terms = npleaves(tree)
+
+    for food in terms:
+        name = ""
+        count = None
+        quantity = None
+        for i, taggedWord in enumerate(food):
+            word, tag = taggedWord
+            if tag == 'JJ' or tag == 'NN' or tag == 'NNS':
+                if name == "":
+                    name = word
+                else:
+                    name = name + " " + word
+            elif tag == 'CD':
+                count = word
+            elif tag == 'QUAN':
+                quantity = word
+        f = Food(name, count, quantity)
+        foods.append(f)
+
+    return foods
 
 #term is a list of strings
 def classify_npterm(term):
-    # TODO change this to a map for constant time lookup
-    timeTokens = ["minutes", "hours", "seconds", "moments", "minute",
-                    "hour", "second", "moment", "min", "mins",
-                    "night", "tonight"]
-    for tok in timeTokens:
-        for f,p in term:
-            if tok in f:
-                return "time"
-        #  if tok in term:
-            #  return "time"
     return "food"
 
+# =============================================================================
+# PARSE INPUT
+# =============================================================================
 def parse_input(inputSentence, verbose):
-    # TODO fix POS tagger
-    # fails on I ate hummus 5 minutes ago
     postoks = pos_tokenize(inputSentence)
     tree = chunk_tree(postoks)
     terms = get_terms(tree)
@@ -107,13 +147,28 @@ def parse_input(inputSentence, verbose):
         foodList.append(term)
     return foodList
 
-def print_guess(inputSentence):
-    postoks = pos_tokenize(inputSentence)
-    print postoks
-    tree = chunk_tree(postoks)
-    print tree
-    terms = get_terms(tree)
-    for term, _ in terms:
-        for word in term:
-            print word,
+# =============================================================================
+# FOOD CLASS
+# =============================================================================
+class Food():
+    def __init__(self, name, count=None, quantity=None):
+        self.name = name
+        self.count = count
+        self.quantity = quantity
+    def pprint(self):
+        print "Food:", self.name
+        if self.count:
+            print "Count:", self.count
+        if self.quantity:
+            print "Quant:", self.quantity
+        
+#  def print_guess(inputSentence):
+    #  postoks = pos_tokenize(inputSentence)
+    #  print postoks
+    #  tree = chunk_tree(postoks)
+    #  print tree
+    #  terms = get_terms(tree)
+    #  for term, _ in terms:
+        #  for word in term:
+            #  print word,
 

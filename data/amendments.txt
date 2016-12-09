@@ -1,0 +1,83 @@
+chicken NN
+hummus NN
+toast NN
+fish NN
+
+with WITH
+
+minute TIMR
+minutes TIMR
+hour TIMR
+hours TIMR
+second TIMR
+seconds TIMR
+moment TIMR
+moments TIMR
+min TIMR
+mins TIMR
+
+now TIMA
+yesterday TIMA
+Yesterday TIMA
+night TIMA
+nights TIMA
+morning TIMA
+afternoon TIMA
+tomorrow TIMA
+Tomorrow TIMA
+tonight TIMA
+Tonight TIMA
+
+sip QUAN
+bag QUAN
+pinch QUAN
+bit QUAN
+pinches QUAN
+piece QUAN
+pieces QUAN
+hella QUAN
+lots QUAN
+alot QUAN
+ton QUAN
+serving QUAN
+servings QUAN
+
+pound QUAN
+pounds QUAN
+stone QUAN
+stones QUAN
+gram QUAN
+grams QUAN
+kilogram QUAN
+kilograms QUAN
+ounce QUAN
+ounces QUAN
+lb QUAN
+lbs QUAN
+
+quarter QUAN
+quarters QUAN
+half QUAN
+halves QUAN
+
+pint QUAN
+pints QUAN
+cup QUAN
+cups QUAN
+can QUAN
+cans QUAN
+quart QUAN
+quarts QUAN
+gallon QUAN
+gallons QUAN
+liter QUAN
+liters QUAN
+glass QUAN
+glasses QUAN
+
+bushel QUAN
+bushels QUAN
+handful QUAN
+handfuls QUAN
+bunch QUAN
+bunches QUAN
