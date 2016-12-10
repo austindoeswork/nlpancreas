@@ -1,11 +1,28 @@
 import json,MySQLdb
-dbConfig = json.loads(open("./config.json").read())
+from fuzzywuzzy import fuzz
+dbConfig = json.loads(open("nutrition_facts/config.json").read())
+
+class Nutrition():
+    def __init__(self, name, protein, fat, carbs, sugar):
+        self.name = name
+        self.protein = protein
+        self.fat = fat
+        self.carbs = carbs
+        self.sugar = sugar
+    def pprint(self):
+        print "Nutrition Info:"
+        print self.name
+        print "----Protein:", self.protein
+        print "----Fats   :", self.fat
+        print "----Carbs  :", self.carbs
+        print "----Sugar  :", self.sugar
 
 #Function takes an string of words like "dried apple"
 #returns JSON containing food name, protein,fat,carbohydrate,total_sugar
 def getNutritionValue(input):
 	inputArray = input.split(" ")
-	db = MySQLdb.connect(host=dbConfig["host"],user=dbConfig["user"],passwd=dbConfig["passwd"],db=dbConfig["db"], unix_socket=dbConfig["unix_socket"])
+	#  db = MySQLdb.connect(host=dbConfig["host"],user=dbConfig["user"],passwd=dbConfig["passwd"],db=dbConfig["db"], unix_socket=dbConfig["unix_socket"])
+	db = MySQLdb.connect(host=dbConfig["host"],user=dbConfig["user"],passwd=dbConfig["passwd"],db=dbConfig["db"])
 	cur = db.cursor()
 	query = "SELECT Food_Name, Protein, Fat, Carbohydrate, Total_Sugar from nutrition_fact WHERE "
 
@@ -16,20 +33,27 @@ def getNutritionValue(input):
 			query += "Food_Name LIKE '%"+inputArray[i]+"%'"
 
 	cur.execute(query)
-	first = cur.fetchall()[0]
 
-	jsonOut = "{"
-	jsonOut +="'Food_Name':" + "'" + first[0] + "',"
-	jsonOut +="'Protein':" + "'" + first[1] + "',"
-	jsonOut +="'Fat':" + "'" + first[2] + "',"
-	jsonOut +="'Carbohydrate':" + "'" + first[3] + "',"
-	jsonOut +="'Total_Sugar':" + "'" + first[4] + "'"
-	jsonOut += "}"
+        try:
+            allMatches = cur.fetchall()
+            bestMatch = None
+            bestRatio = 0
+            
+            for match in allMatches:
+                ratio = fuzz.partial_token_sort_ratio(match[0], input)
+                if ratio > bestRatio:
+                    ratio = bestRatio
+                    bestMatch = match
 
-	return jsonOut
+            n = Nutrition(bestMatch[0],bestMatch[1],bestMatch[2],bestMatch[3],bestMatch[4])
+            return n
+
+        except:
+            return None
+        
 
 
 
 #EXAMPLE CALL:
-# a="dried apple"
-# getNutritionValue(a)
+#  a="dried apple"
+#  getNutritionValue(a)

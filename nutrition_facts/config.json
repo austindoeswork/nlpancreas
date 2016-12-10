@@ -2,6 +2,5 @@
 	"host":"localhost",
 	"user":"root",
 	"passwd":"",
-	"db":"pancr",
-	"unix_socket":"/opt/lampp/var/mysql/mysql.sock"
+	"db":"pancr"
 }

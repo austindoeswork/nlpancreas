@@ -17,13 +17,14 @@ sentence_re = r'''(?x)      # set flag to allow verbose regexps
 '''
 #Taken from Su Nam Kim Paper and modified
 grammar = r"""
+    AMOUNT:
+        {<CD><QUAN>}
+        {<QUAN>}
     NBAR:
         {<NN.*|JJ>*<NN.*>}  # Nouns and Adjectives, terminated with Nouns
     NBARS:
         {<CD><NBAR>} # count then a noun phrase
-    AMOUNT:
-        {<CD><QUAN>}
-        {<QUAN>}
+        {<AMOUNT><NBAR>}
     FOOD:
         {<NBAR><IN><NBAR>}  
         {<NBAR><POS><NBAR>}  
@@ -47,6 +48,14 @@ chunker = nltk.RegexpParser(grammar)
 # NLP
 # =============================================================================
 # TODO refactor all of this into a class
+
+def is_confirm(inputSentence):
+    toks = nltk.word_tokenize(inputSentence)
+    confirmers = ['sure', 'y', 'great', 'yea', 'yeah', 'yes', 'yup', 'thanks', 'super', 'awesome', 'yee']
+    for conf in confirmers:
+        if conf in toks:
+            return True
+    return False
 
 amendments = None
 def set_amendments(filepath):
@@ -85,6 +94,12 @@ def npleaves(tree):
     for subtree in tree.subtrees(filter = lambda t: t.label()=='FOOD'):
         yield subtree.leaves()
 
+def timeleaves(tree):
+    time = []
+    for subtree in tree.subtrees(filter = lambda t: t.label()=='TIME'):
+        time.append(subtree)
+    return time
+
 def normalise(word):
     """Normalises words to lowercase and stems and lemmatizes it."""
     word = word.lower()
@@ -104,8 +119,19 @@ def acceptable_word(word):
 def get_terms(tree):
     terms = []
     foods = []
-    terms = npleaves(tree)
 
+    foodTime = None
+    time = timeleaves(tree)
+    if len(time) > 0:
+        foodTime = ""
+        for taggedTime in time[0]:
+            wor, ta = taggedTime
+            if foodTime == "":
+                foodTime = wor
+            else:
+                foodTime = foodTime + " " + wor
+
+    terms = npleaves(tree)
     for food in terms:
         name = ""
         count = None
@@ -124,7 +150,7 @@ def get_terms(tree):
         f = Food(name, count, quantity)
         foods.append(f)
 
-    return foods
+    return foods,foodTime
 
 #term is a list of strings
 def classify_npterm(term):
@@ -158,9 +184,9 @@ class Food():
     def pprint(self):
         print "Food:", self.name
         if self.count:
-            print "Count:", self.count
+            print "----Count:", self.count
         if self.quantity:
-            print "Quant:", self.quantity
+            print "----Quant:", self.quantity
         
 #  def print_guess(inputSentence):
     #  postoks = pos_tokenize(inputSentence)

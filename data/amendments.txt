@@ -1,4 +1,7 @@
 chicken NN
+cake NN
+egg NN
+eggs NNS
 hummus NN
 toast NN
 fish NN
@@ -27,9 +30,19 @@ tomorrow TIMA
 Tomorrow TIMA
 tonight TIMA
 Tonight TIMA
+breakfast TIMA
+lunch TIMA
+dinner TIMA
+brunch TIMA
 
 sip QUAN
+block QUAN
+blocks QUAN
+sips QUAN
+slice QUAN
+slices QUAN
 bag QUAN
+bags QUAN
 pinch QUAN
 bit QUAN
 pinches QUAN
